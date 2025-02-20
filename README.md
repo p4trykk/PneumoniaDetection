@@ -9,12 +9,20 @@ This repository contains a project for detecting pneumonia from chest X-ray imag
 ## Project Structure
 
 The repository is organized as follows:
-
-- `chest_xray/`: Directory containing the X-ray images categorized into `train`, `val`, and `test` subdirectories.
-- `train/`: Training dataset.
-- `val/`: Validation dataset.
-- `test/`: Test dataset.
+```
+Pneumonia-Detection/
+│-- chest_xray/
+│   │-- train/
+│   │   │-- NORMAL/        # Normal chest X-rays
+│   │   │-- PNEUMONIA/     # Pneumonia cases (both viral and bacterial)
+│   │-- val/
+│   │   │-- NORMAL/
+│   │   │-- PNEUMONIA/
+│   │-- test/
+│   │   │-- NORMAL/
+│   │   │-- PNEUMONIA/
 - `pneumonia_detection.ipynb`: Jupyter notebook containing the code for training and evaluating the model.
+```
 
 ## Setup
 
@@ -37,6 +45,13 @@ The dataset used in this project is organized into three subsets:
 - **Validation Set**: Used to tune the model hyperparameters.
 - **Test Set**: Used to evaluate the model's performance on unseen data.
 
+Each dataset (train, val, test) contains two main categories:
+- NORMAL/ – X-ray images of healthy lungs.
+- PNEUMONIA/ – X-ray images showing pneumonia, further divided into:
+- Bacterial Pneumonia – Identified with "bacteria" in the filename.
+- Viral Pneumonia – Identified with "virus" in the filename.
+To properly utilize the dataset, the code must extract this information from the filenames and label the images accordingly during preprocessing.
+
 ## Data Preprocessing
 
 The images are preprocessed using the `ImageDataGenerator` class from Keras, which includes the following transformations:
@@ -49,8 +64,12 @@ The images are preprocessed using the `ImageDataGenerator` class from Keras, whi
 - Width shifting
 - Rotation
 
+<p align="center"><img src='https://github.com/p4trykk/PneumoniaDetection/blob/main/results/class_distribution1102.png'></p>
+
+
 ## Model Architecture
 
+### Two classes model using ResNet50
 The model is built using the ResNet50V2 architecture with the following modifications:
 
 - Global average pooling layer
@@ -59,29 +78,34 @@ The model is built using the ResNet50V2 architecture with the following modifica
 
 The ResNet50V2 layers are frozen to leverage transfer learning, only training the added layers.
 
-## Training
+### 3 classes model using EfficientNetB3 - training pipeline
+The model is implemented using EfficientNetB3 with additional regularization and a focal loss function to handle class imbalance. Below are the key steps:
+1. Data Loading and Preprocessing
+   - Images are loaded and resized to 300x300 pixels
+   - Labels are assigned based on filenames
+   - Class weights are computed to address dataset imbalance
+   - Augmentations such as horizontal flip, rotation, and brightness contrast are applied
+2. Model Definition
+   - Uses EfficientNetB3 as the base model with additional dense layers
+   - Dropout and L2 regularization are applied
+   - The output layer has 3 neurons for multi-class classification (Normal, Bacterial, Viral)
+3. Training Configuration
+    -  Optimized with AdamW optimizer
+    -  Uses focal loss to counter class imbalance
+    -  Cosine annealing learning rate scheduler is implemented
+    -  Model training includes early stopping and best model checkpoint saving
+4. Evaluation
+   - The trained model is evaluated using a test set
+   - A confusion matrix is generated to visualize classification performance
+   - A classification report is printed with precision, recall, and F1 scores
 
-The model is trained using the following configurations:
+### Results
+For EfficientNetB3 model (classify 3 classes):
+<p align="center"><img src='https://github.com/p4trykk/PneumoniaDetection/blob/main/results/confusion_matrixEN3.png'></p>
 
-- Optimizer: Adam
-- Loss function: Binary Cross-Entropy
-- Metrics: Accuracy
-- Number of epochs: 30
-- Batch size: 32
+For Resnet50 model:
+<p align="center"><img src='https://github.com/p4trykk/PneumoniaDetection/blob/main/results/confusion_matrix_VGG16.png'></p>
 
-## Evaluation
-
-The model's performance is evaluated on the test set, with metrics including accuracy, precision, recall, and F1-score. Additionally, confusion matrices are generated for a detailed performance analysis.
-
-### Example Results
-
-- **Training Accuracy**: 95.91%
-- **Validation Accuracy**: 91.66%
-- **Test Accuracy**: 91%
-
-## Visualizations
-
-The training and validation loss and accuracy are plotted to visualize the model's learning process. Confusion matrices are also plotted for the training, validation, and test sets.
 
 ## Model Saving
 
